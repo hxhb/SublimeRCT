@@ -1,0 +1,23 @@
+{
+	"cmd": ["cmd", "/c","remotecomplie","${file}","C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteComplie","directRun"],
+	"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+     "working_dir": "${file_path}",
+     "selector": "source.c,source.cc,source.cpp,source.c++",
+     // "encoding":"cp936",
+     "shell": true,
+     "variants":
+     [
+          {
+                "name": "TerminalRun",
+                 "cmd": ["start", "cmd", "/k","remotecomplie","${file}","C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteComplie","terminalRun"]
+          },
+          {
+                "name": "UploadThisFile",
+                 "cmd": ["cmd", "/c","remotecomplie","${file}","C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteComplie","uploadThisFile"]
+          },
+          {
+                "name": "OpenTerminal",
+                 "cmd": ["start", "cmd", "/k","remotecomplie","${file}","C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteComplie","openTerminal"]
+          }
+     ]
+ }
