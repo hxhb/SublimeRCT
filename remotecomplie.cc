@@ -122,29 +122,29 @@ int main(int argc, char const *argv[])
 {
 	string localfilePath,filename;
 	string runStyle;
-	if(argc==4){
+	if(argc==3){
 		localfilePath=converCharPtoStr(argv[1]);
-		iniFilePath=converCharPtoStr(argv[2]);
+		// iniFilePath=converCharPtoStr(argv[2]);
 		auto last=localfilePath.find_last_of('\\')+1;
 		auto dotlast=localfilePath.find_last_of('.');
 		filename=string(localfilePath.begin()+last,localfilePath.begin()+dotlast);
-		runStyle=converCharPtoStr(argv[3]);
+		runStyle=converCharPtoStr(argv[2]);
 	}else{
-		cout<<"Usage:\n\tTheExec SourceFileFullPath iniFilePath RunStyle"<<endl;
-		cout<<"RunStyle:\n\tdirectRun\tterminalRun\tuploadThisFile\topenTerminal"<<endl;
+		cout<<"Usage:\n\tTheExec SourceFileFullPath RunStyle"<<endl;
+		cout<<"RunStyle:\n\tpanelRun\tterminalRun\tuploadThisFile\topenTerminal"<<endl;
 		cout<<"E.g.:"<<endl;
-		cout<<"\tcommandExec D:\\\\TEST\\\\A.cc C:\\\\SSHSetting.ini terminalRun"<<endl;
+		cout<<"\tcommandExec D:\\\\TEST\\\\A.cc terminalRun"<<endl;
 		return 0;
 	}
 
 	// get .ini setting file fullpath
-	fixWinPathDoubleSprit(iniFilePath);
-	iniFilePath+="\\\\setting.ini";
+	// fixWinPathDoubleSprit(iniFilePath);
+	// iniFilePath+="\\\\setting.ini";
 
-	if(!checkHaveIniFile(iniFilePath)){
-		newIniFile(iniFilePath);
+	if(!checkHaveIniFile("setting.ini")){
+		newIniFile("steeing.ini");
 	}else{
-		setting.load(iniFilePath);
+		setting.load("setting.ini");
 	}
 
 	// check ini file key and value
@@ -192,6 +192,7 @@ int main(int argc, char const *argv[])
 	// merge args
 	string pscp;
 	string plink;
+	string sshlink;
 	string commandArgs=mergeStr({unionArgs["compiler"],unionArgs["optimizied"],filename,filename+"*",unionArgs["stdver"],unionArgs["otherCompileArgs"]});
 	string start="./"+filename;
 	string sshclear="rm "+filename+"*";
@@ -206,7 +207,7 @@ int main(int argc, char const *argv[])
 	// cout<<pscp<<endl<<plink<<endl;
 	// call ssh
 	switch(hashNum(runStyle)){
-		case "directRun"_HASH: {
+		case "panelRun"_HASH: {
 			// cout<<"directRun"<<endl;
 			system(pscp.c_str());
 			system(plink.c_str());
@@ -219,14 +220,16 @@ int main(int argc, char const *argv[])
 			break;
 		}
 		case "openTerminal"_HASH: {
-			string sshlink;
-			if(checkIniKey("sshKeyPath")){
-				sshlink=mergeStr({"ssh","-p",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\id_rsa",unionArgs["host"]});
-				cout<<sshlink<<endl;
+			if(checkIniKey("password")){
+				sshlink=mergeStr({"putty","-P",unionArgs["port"],"-pw",unionArgs["password"],unionArgs["host"]});
+				cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
+				// cout<<sshlink<<endl;
 				system(sshlink.c_str());
+
 			}else{
-				sshlink=mergeStr({"ssh","-p",unionArgs["port"],unionArgs["host"]});
-				cout<<sshlink<<endl;
+				sshlink=mergeStr({"putty","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk",unionArgs["host"]});
+				cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
+				// cout<<sshlink<<endl;
 				system(sshlink.c_str());
 			}
 			break;
@@ -235,13 +238,17 @@ int main(int argc, char const *argv[])
 			string remoteHostUserName(unionArgs["host"].begin(),unionArgs["host"].begin()+unionArgs["host"].find_first_of('@'));
 			string uploadTofullPath;
 			if(unionArgs["uploadTo"].find('~')!=string::npos){
-				uploadTofullPath="/home/"+remoteHostUserName+string(unionArgs["uploadTo"].begin()+unionArgs["uploadTo"].find('~')+1,unionArgs["uploadTo"].end());
-				// cout<<uploadTofullPath<<endl;
+				if(unionArgs["uploadTo"].find('~')!=string::npos){
+					uploadTofullPath="/home/"+remoteHostUserName+string(unionArgs["uploadTo"].begin()+unionArgs["uploadTo"].find('~')+1,unionArgs["uploadTo"].end());
+				}else{
+					uploadTofullPath=unionArgs["uploadTo"];
+				}
+				cout<<uploadTofullPath<<endl;
 			}
-			if(checkIniKey("sshKeyPath")){
-				pscp=mergeStr({"pscp","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\id_rsa.ppk","\""+localfilePath+"\"",unionArgs["host"]+":"+uploadTofullPath});
-			}else{
+			if(checkIniKey("password")){
 				pscp=mergeStr({"pscp","-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+localfilePath+"\"",unionArgs["host"]+":"+uploadTofullPath});
+			}else{
+				pscp=mergeStr({"pscp","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+localfilePath+"\"",unionArgs["host"]+":"+uploadTofullPath});
 			}
 			system(pscp.c_str());
 			string SourceFilePath=converCharPtoStr(argv[1]);
