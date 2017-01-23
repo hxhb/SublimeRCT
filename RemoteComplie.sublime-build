@@ -16,6 +16,10 @@
                  "cmd": ["cmd", "/c","remotecomplie","${file}","uploadThisFile"]
           },
           {
+                "name": "UploadThisFolder",
+                 "cmd": ["cmd", "/c","remotecomplie","${file}","uploadThisFolder"]
+          },
+          {
                 "name": "OpenTerminal",
                  "cmd": ["cmd", "/k","remotecomplie","${file}","openTerminal"]
           }

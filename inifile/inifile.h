@@ -58,6 +58,7 @@ public:
 
     /*获取section段第一个键为key的值,并返回其string型的值*/
     string getStringValue(const string &section, const string &key, int &ret);
+    string getStringValue(const string &section, const string &key);
     /*获取section段第一个键为key的值,并返回其int型的值*/
     int getIntValue(const string &section, const string &key, int &ret);
     /*获取section段第一个键为key的值,并返回其double型的值*/

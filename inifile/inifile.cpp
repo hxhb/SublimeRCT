@@ -250,6 +250,15 @@ string IniFile::getStringValue(const string &section, const string &key, int &re
     return value;
 }
 
+string IniFile::getStringValue(const string &section, const string &key)
+{
+    string value, comment;
+
+    getValue(section, key, value, comment);
+
+    return value;
+}
+
 int IniFile::getIntValue(const string &section, const string &key, int &ret)
 {
     string value, comment;
