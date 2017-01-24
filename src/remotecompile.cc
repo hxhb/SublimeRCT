@@ -1,5 +1,4 @@
-#include "inifile/inifile.h"
-#include "inifile/inifile.cpp"
+#include "inifile.hpp"
 #include <iostream>
 #include <fstream>
 #include <io.h>
@@ -31,6 +30,7 @@ static size_t hashNum(const string &str) {
 bool checkIniKey(const std::string& key){
 	const std::string section("RemoteCompileSSHSetting");
 	int keyState=0;
+	// cout<<::setting.getStringValue(section, key)<<endl;
 	if(::setting.getStringValue(section, key, keyState).size()==0){
 		return false;
 	}else{
@@ -159,9 +159,9 @@ string getUplodeFullPath(const string& path){
 string mergePscp(const string& binaryAbsPath,const string& path,const string& other=""){
 	string pscp;
 	if(checkIniKey("password")){
-		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp",other,"-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
+		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"",other,"-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
 	}else{
-		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp",other,"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
+		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"",other,"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\id_rsa.ppk","\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
 	}
 	return pscp;
 }
@@ -185,7 +185,7 @@ void uploadTo(const string& binaryAbsPath,string &pscp,const string &createNowTi
 			cout<<"Parameter error!"<<endl;
 		}
 	}
-	pscp+="/"+nowTime;
+	pscp+="/"+nowTime+"\"";
 	// cout<<pscp<<endl;
 	system(pscp.c_str());
 }
@@ -230,15 +230,14 @@ int main(int argc, char const *argv[])
 
 	// check ini file key and value
 	if(!(checkIniKey("host")&&
-		   checkIniKey("port")&&
-		   checkIniKey("compiler")&&
-		   checkIniKey("optimizied")&&
-		   checkIniKey("stdver")&&
-		   checkIniKey("remoteTempFolder")&&
-		   (checkIniKey("sshKeyPath")||checkIniKey("password"))&&
-		   checkIniKey("otherCompileArgs")&&
-		   checkIniKey("uploadTo")
-	    )
+		checkIniKey("port")&&
+		(checkIniKey("password")||checkIniKey("sshKeyPath"))&&
+		checkIniKey("compiler")&&
+		checkIniKey("optimizied")&&
+		checkIniKey("stdver")&&
+		checkIniKey("otherCompileArgs")&&
+		checkIniKey("remoteTempFolder")&&
+		checkIniKey("uploadTo"))
 	)
 	{
 		cout<<"Please re-fill in the ini file and try again."<<endl;
@@ -282,20 +281,20 @@ int main(int argc, char const *argv[])
 	string start="./"+filename;
 	string sshclear="rm "+filename+"*";
 	if(checkIniKey("password")){
-		checkRemoteTempFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["remoteTempFolder"],"\""});
-		createNowTimeFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\""});
-		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp","-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]});
-		plink=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\""});
-		sshlink=mergeStr({binaryAbsPath+"\\SSHTools\\putty","-P",unionArgs["port"],"-pw",unionArgs["password"],unionArgs["host"]});
+		checkRemoteTempFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["remoteTempFolder"],"\"\""});
+		createNowTimeFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\"\""});
+		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"","-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"],"\""});
+		plink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\"\""});
+		sshlink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\putty\"","-P",unionArgs["port"],"-pw",unionArgs["password"],unionArgs["host"],"\""});
 		// string year=string(nowTime.begin()+nowTime.begin()+4);
-		cleanRemoteTemp=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\""});
+		cleanRemoteTemp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\"\""});
 	}else{
-		checkRemoteTempFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"],"\""});
-		createNowTimeFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\""});
-		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]});
-		plink=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\""});
-		sshlink=mergeStr({binaryAbsPath+"\\SSHTools\\putty","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk",unionArgs["host"]});
-		cleanRemoteTemp=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\""});
+		checkRemoteTempFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"],"\"\""});
+		createNowTimeFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\"\""});
+		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"],"\""});
+		plink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\"\""});
+		sshlink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\putty\"","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk",unionArgs["host"],"\""});
+		cleanRemoteTemp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\"\""});
 	}
 	// cout<<checkRemoteTempFolder<<endl
 	// 	<<createNowTimeFolder<<endl
