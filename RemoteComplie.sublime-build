@@ -1,7 +1,7 @@
 {
-    // binary fullpath
-    "working_dir": "C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteComplie",
-    "cmd": ["cmd", "/c","remotecomplie","${file}","panelRun"],
+    // binary absolute path
+    "path": "C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteCompile\\binary",
+    "cmd": ["cmd", "/c","remotecompile","${file}","panelRun"],
     "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
      "selector": "source.c,source.cc,source.cpp,source.c++",
      "shell": true,
@@ -9,19 +9,23 @@
      [
           {
                 "name": "TerminalRun",
-                 "cmd": ["start", "cmd", "/k","remotecomplie","${file}","terminalRun"]
+                 "cmd": ["start", "cmd", "/k","remotecompile","${file}","terminalRun"]
           },
           {
                 "name": "UploadThisFile",
-                 "cmd": ["cmd", "/c","remotecomplie","${file}","uploadThisFile"]
+                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadThisFile"]
           },
           {
-                "name": "UploadThisFolder",
-                 "cmd": ["cmd", "/c","remotecomplie","${file}","uploadThisFolder"]
+                "name": "UploadCurrentFolder",
+                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadCurrentFolder"]
+          },
+          {
+                "name": "CleanUpTemp",
+                "cmd": ["cmd", "/k","remotecompile","${file}","cleanUpTemp"]
           },
           {
                 "name": "OpenTerminal",
-                 "cmd": ["cmd", "/k","remotecomplie","${file}","openTerminal"]
+                 "cmd": ["cmd", "/k","remotecompile","${file}","openTerminal"]
           }
      ]
 }

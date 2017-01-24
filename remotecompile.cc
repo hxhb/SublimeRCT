@@ -13,10 +13,10 @@ using namespace inifile;
 
 #define MAXPATH 512
 
-static IniFile setting; // global ini file
-static map<string,string> unionArgs; // args of .ini
-// static string iniFilePath; // fullpath of .ini file
+static IniFile setting; // global .ini  setting file
+static map<string,string> unionArgs; // args pack of .ini
 
+// calculate string hash
 static constexpr size_t HASH_STRING_PIECE(const char *string_piece, size_t hashNum = 0) {
 	return *string_piece ? HASH_STRING_PIECE(string_piece + 1, (hashNum * 131) + *string_piece) : hashNum;
 }
@@ -41,6 +41,7 @@ bool checkIniKey(const std::string& key){
 
 // check have .ini file
 bool checkHaveIniFile(const string& execPath){
+	// cout<<execPath<<endl;
 	if(!access(execPath.c_str(),F_OK)){
 		// printf("have\n");
 		return true;
@@ -50,7 +51,7 @@ bool checkHaveIniFile(const string& execPath){
 	}
 }
 
-// if .ini is not found,create a .ini file
+// if not found .ini file,create a .ini file
 void newIniFile(const string& iniFilePath){
 	fstream settingIni(iniFilePath,ofstream::out);
 	settingIni<<"[RemoteCompileSSHSetting]\n;remote host addr(e.g root@192.168.137.2)\nhost=\n"<<endl
@@ -99,13 +100,24 @@ void fixWinPathDoubleSprit(string& path){
 }
 
 // get The exec programming fullPath
-string getExecPath(void){
+string getExecAbsPath(void){
 	char buffer[MAXPATH];
 	getcwd(buffer, MAXPATH);
 	string execPath=converCharPtoStr(buffer);
 	return execPath;
 }
 
+string getTheProgramAbsPath(void){
+	TCHAR exeFullPath[MAX_PATH]; // MAX_PATH在WINDEF.h中定义了，等于260
+	memset(exeFullPath,0,MAX_PATH);
+	GetModuleFileName(NULL,exeFullPath,MAX_PATH);
+	string binaryHaveBinaryNameAbsPath=converCharPtoStr(exeFullPath);
+	// cout<<converCharPtoStr(exeFullPath)<<endl;
+	string binaryAbsPath=string(binaryHaveBinaryNameAbsPath.begin(),binaryHaveBinaryNameAbsPath.begin()+binaryHaveBinaryNameAbsPath.find_last_of("\\"));
+	// fixWinPathDoubleSprit(binaryAbsPath);
+	// cout<<binaryAbsPath<<endl;
+	return binaryAbsPath;
+}
 // get Source file prefix name
 string getFilePrefix(const string& SourceFilePath){
 	string temp(SourceFilePath.begin()+SourceFilePath.find_last_of('.')+1,SourceFilePath.end());
@@ -143,57 +155,77 @@ string getUplodeFullPath(const string& path){
 	return uploadTofullPath;
 }
 
-
 // merge pscp
-
-string mergePscp(const string& path,const string& other=""){
+string mergePscp(const string& binaryAbsPath,const string& path,const string& other=""){
 	string pscp;
 	if(checkIniKey("password")){
-		pscp=mergeStr({"pscp",other,"-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
+		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp",other,"-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
 	}else{
-		pscp=mergeStr({"pscp",other,"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
+		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp",other,"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
 	}
 	return pscp;
 }
 
-void uploadTo(string &pscp,const string &createNowTimeFolder,const string& localfilePath,const string& nowTime){
+void uploadTo(const string& binaryAbsPath,string &pscp,const string &createNowTimeFolder,const string& localfilePath,const string& nowTime,const string& UpMode){
 	cout<<"Check whether there is "<<unionArgs["uploadTo"]<<"..."<<endl;
 	cout<<"Create "<<unionArgs["uploadTo"]<<"/"<<nowTime<<"..."<<endl;
 	system(createNowTimeFolder.c_str());
+	cout<<"The folder "<<unionArgs["uploadTo"]<<"/"<<nowTime<<" was created successfully."<<endl;
 	// system(checkRemoteTempFolder.c_str());
-	pscp=mergePscp(localfilePath);
+	switch(hashNum(UpMode)){
+		case "file"_HASH: {
+			pscp=mergePscp(binaryAbsPath,localfilePath);
+			break;
+		}
+		case "folder"_HASH: {
+			pscp=mergePscp(binaryAbsPath,localfilePath,"-r");
+			break;
+		}
+		default: {
+			cout<<"Parameter error!"<<endl;
+		}
+	}
 	pscp+="/"+nowTime;
 	// cout<<pscp<<endl;
 	system(pscp.c_str());
 }
 
+void howuse(void){
+	cout<<"Usage:\n\tTheProgram SourceFileFullPath RunMode"<<endl;
+	cout<<"RunMode:\n\tpanelRun: Run on SublimeText Panel."<<endl
+		<<"\tterminalRun: Run on a new window."<<endl
+		<<"\tuploadThisFile: Upload current file to remoteHost."<<endl
+		<<"\tuploadThisFolder: Upload current folder to remoteHost."<<endl
+		<<"\topenTerminal: Open a SSH link to remoteHost."<<endl
+		<<"\tcleanUpRemoteTemp: clean up remote host temp folder."<<endl
+		<<"E.g.:"<<endl
+		<<"\tcommandExec D:\\TEST\\A.cc terminalRun"<<endl;
+}
 int main(int argc, char const *argv[])
 {
 	SetConsoleTitle("RemoteCompile");
-	string localfilePath,localNoFileNamePath,filename;
-	string runStyle;
+	string binaryAbsPath=getTheProgramAbsPath();
+	// cout<<binaryAbsPath<<endl;
+	string localfilePath,localNoFileNamePath,filename,filenameHavePrefix;
+	string runMode;
 
 	if(argc==3){
 		localfilePath=converCharPtoStr(argv[1]);
-		// iniFilePath=converCharPtoStr(argv[2]);
-		auto lastBackslash=localfilePath.find_last_of('\\')+1;
-		auto dotlast=localfilePath.find_last_of('.');
-		filename=string(localfilePath.begin()+lastBackslash,localfilePath.begin()+dotlast);
+		runMode=converCharPtoStr(argv[2]);
+		size_t lastBackslash=localfilePath.find_last_of('\\');
+		size_t dotlast=localfilePath.find_last_of('.');
+		filename=string(localfilePath.begin()+lastBackslash+1,localfilePath.begin()+dotlast);
+		filenameHavePrefix=string(localfilePath.begin()+lastBackslash+1,localfilePath.end());
 		localNoFileNamePath=string(localfilePath.begin(),localfilePath.begin()+lastBackslash);
-		fixWinPathDoubleSprit(localNoFileNamePath);
-		runStyle=converCharPtoStr(argv[2]);
 	}else{
-		cout<<"Usage:\n\tTheExec SourceFileFullPath RunStyle"<<endl;
-		cout<<"RunStyle:\n\tpanelRun\tterminalRun\tuploadThisFile\tuploadThisFolder\topenTerminal"<<endl;
-		cout<<"E.g.:"<<endl;
-		cout<<"\tcommandExec D:\\\\TEST\\\\A.cc terminalRun"<<endl;
+		howuse();
 		return 0;
 	}
 
-	if(!checkHaveIniFile("setting.ini")){
-		newIniFile("setting.ini");
+	if(!checkHaveIniFile(binaryAbsPath+"\\setting.ini")){
+		newIniFile(binaryAbsPath+"\\setting.ini");
 	}else{
-		setting.load("setting.ini");
+		setting.load(binaryAbsPath+"\\setting.ini");
 	}
 
 	// check ini file key and value
@@ -210,7 +242,7 @@ int main(int argc, char const *argv[])
 	)
 	{
 		cout<<"Please re-fill in the ini file and try again."<<endl;
-		system(("notepad "+getExecPath()+"\\setting.ini").c_str());
+		system(("C:\\Windows\\System32\\notepad "+binaryAbsPath+"\\setting.ini").c_str());
 		return 0;
 	}
 
@@ -243,33 +275,41 @@ int main(int argc, char const *argv[])
 	string pscp;
 	string plink;
 	string sshlink;
+	string cleanRemoteTemp;
 	string checkRemoteTempFolder,createNowTimeFolder;
 	string nowTime=getNowTime();
 	string commandArgs=mergeStr({unionArgs["compiler"],unionArgs["optimizied"],filename,filename+"*",unionArgs["stdver"],unionArgs["otherCompileArgs"]});
 	string start="./"+filename;
 	string sshclear="rm "+filename+"*";
-
-	if(checkIniKey("sshKeyPath")){
-		checkRemoteTempFolder=mergeStr({"plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"],"\""});
-		createNowTimeFolder=mergeStr({"plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\""});
-		pscp=mergeStr({"pscp","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]});
-		plink=mergeStr({"plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\""});
-		sshlink=mergeStr({"putty","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk",unionArgs["host"]});
+	if(checkIniKey("password")){
+		checkRemoteTempFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["remoteTempFolder"],"\""});
+		createNowTimeFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\""});
+		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp","-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]});
+		plink=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\""});
+		sshlink=mergeStr({binaryAbsPath+"\\SSHTools\\putty","-P",unionArgs["port"],"-pw",unionArgs["password"],unionArgs["host"]});
+		// string year=string(nowTime.begin()+nowTime.begin()+4);
+		cleanRemoteTemp=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\""});
 	}else{
-		checkRemoteTempFolder=mergeStr({"plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["remoteTempFolder"],"\""});
-		createNowTimeFolder=mergeStr({"plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\""});
-		pscp=mergeStr({"pscp","-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]});
-		plink=mergeStr({"plink",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\""});
-		sshlink=mergeStr({"putty","-P",unionArgs["port"],"-pw",unionArgs["password"],unionArgs["host"]});
+		checkRemoteTempFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"],"\""});
+		createNowTimeFolder=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\""});
+		pscp=mergeStr({binaryAbsPath+"\\SSHTools\\pscp","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]});
+		plink=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\""});
+		sshlink=mergeStr({binaryAbsPath+"\\SSHTools\\putty","-P",unionArgs["port"],"-i",unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk",unionArgs["host"]});
+		cleanRemoteTemp=mergeStr({binaryAbsPath+"\\SSHTools\\plink",unionArgs["host"],"-P",unionArgs["port"],unionArgs["sshKeyPath"]+"\\\\id_rsa.ppk","\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\""});
 	}
-
+	// cout<<checkRemoteTempFolder<<endl
+	// 	<<createNowTimeFolder<<endl
+	// 	<<pscp<<endl
+	// 	<<plink<<endl
+	// 	<<sshlink<<endl
+	// 	<<cleanRemoteTemp<<endl;
 	if(!(::setting.getStringValue("RemoteCompileSSHSetting", "remoteTempFolder")=="/tmp")){
 		cout<<"Check whether there is "<<unionArgs["remoteTempFolder"]<<"..."<<endl;
 		system(checkRemoteTempFolder.c_str());
 	}
 
-	// call ssh
-	switch(hashNum(runStyle)){
+	// choose run mode
+	switch(hashNum(runMode)){
 		case "panelRun"_HASH: {
 			// cout<<"directRun"<<endl;
 			system(pscp.c_str());
@@ -289,14 +329,20 @@ int main(int argc, char const *argv[])
 			break;
 		}
 		case "uploadThisFile"_HASH: {
-			uploadTo(pscp,createNowTimeFolder,localfilePath,nowTime);
-			string SourceFilePath=converCharPtoStr(argv[1]);
-			cout<<"Successfully upload "<<filename+"."+string(SourceFilePath.begin()+SourceFilePath.find_last_of('.')+1,SourceFilePath.end())<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]<<endl;
+			uploadTo(binaryAbsPath,pscp,createNowTimeFolder,localfilePath,nowTime,"file");
+			// string SourceFilePath=converCharPtoStr(argv[1]);
+			cout<<"Successfully upload "<<filenameHavePrefix<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
 			break;
 		}
-		case "uploadThisFolder"_HASH: {
-			uploadTo(pscp,createNowTimeFolder,localfilePath,nowTime);
+		case "uploadCurrentFolder"_HASH: {
+			uploadTo(binaryAbsPath,pscp,createNowTimeFolder,localNoFileNamePath,nowTime,"folder");
 			cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
+			break;
+		}
+		case "cleanUpTemp"_HASH: {
+			cout<<"clean up "<<unionArgs["host"]<<":"<<unionArgs["uploadTo"]<<"..."<<endl;
+			system(cleanRemoteTemp.c_str());
+			cout<<"Clean up the success."<<endl;
 			break;
 		}
 		default: {
