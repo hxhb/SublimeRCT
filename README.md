@@ -1,12 +1,13 @@
+
 经常在Win上写一些跑在Linux上的测试小代码还需要手动在Linux下执行编译命令有些麻烦，而且我用树莓派配置samba将代码共享到Win上也需要ssh上去手动编译，有点浪费时间。
 这几天写了一个SublimeText的小插件，用来在windows下远程编译C/C++的代码，就是在Windows上写代码但是实际会在Linux上执行。目前只是实现了功能，等放假后休息一下有空优化一下。
-代码放在Gihub上：[sublimeRemoteCompile](https://github.com/hxhb/sublimeRemoteComplie/releases/tag/v1.0)，使用了一些`C++11`的特性，编译时需指定。
-裹了一层ssh操作，用来写一些简单的测试代码还是挺不错的，错误信息也会捕获到ST的Panel中。复杂项目可以使用VS+VisualGDB。
+代码放在Gihub上：[sublimeRemoteCompile](https://github.com/hxhb/sublimeRemoteComplie)，使用了一些`C++11`的特性，编译时需指定。
+裹了一层ssh操作，用来写一些简单的测试代码还是挺爽的，错误信息也会捕获到SublimeText的Panel中。复杂项目可以使用VS+VisualGDB。
 
 通过ini读取配置信息，具有六种运行模式：
 
 | 参数                  | 模式                        |
-| ------------------- | ------------------------- |
+| :-----------------: | :-----------------------: |
 | panelRun            | 运行在SublimeText的Panel      |
 | terminalRun         | 在新窗口中运行                   |
 | uploadThisFile      | 上传当前打开的文件到远程主机的临时目录       |
@@ -17,6 +18,7 @@
 运行模式需要在启动时指定。
 运行时需要指定两个参数：源文件路径和运行模式。在ST的`build system`源文件路径可以通过`${file}`获得。
 
+编译时会根据源文件后缀判断语言，C语言默认使用gcc编译，C++则会使用g++，对应的标准版本则是c99和c++11。建议在Linux环境上安装clang，然后在`setting.ini`中指定编译器为`clang`，错误提示好很多。
 #### 如何使用？
 
 在[这里](https://github.com/hxhb/sublimeRemoteComplie/releases/tag/v1.0)下载二进制压缩包，解压到本地的一个目录中。
@@ -73,7 +75,7 @@ host=
 port=22
 ;remote host user password
 password=
-;sshKey(e.g:C:\![02](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/02.png)\Users\\imzlp\\.ssh\\id_rsa.ppk)
+;sshKey(e.g:C:\\Users\\imzlp\\.ssh\\id_rsa.ppk)
 sshKey=
 ;compiler(e.g:gcc/clang)
 compiler=gcc
@@ -94,21 +96,15 @@ uploadTo=/tmp
 建议填写`host`和`password`或者`sshKey`，其他保持默认即可。
 另外，`sshKey`要求是ppk秘钥，需要将ssh的秘钥使用`puttygen`转换成ppk才可以(`puttygen`在SSHTools目录下)，建议使用`password`。
 
-运行如图：
 ### panelRun
 ![01](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/01.png)
-
 ### terminalRun
 ![02](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/02.png)
-
 ### uploadThisFile
 ![03](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/03.png)
-
 ### uploadCurrentFolder
 ![04](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/04.png)
-
 ### cleanUpTemp
 ![05](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/05.png)
-
 ### openTerminal
 ![06](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/06.png)
