@@ -1,3 +1,24 @@
+### Update:2017.01.26
+1. 优化代码。
+2. 增加另一种机制：如果将远程主机的目录通过samba映射到本地，对其中的文件夹进行编译时直接对该远程目录的源文件进行操作(将本地映射路径转换为远程主机的绝对路径)，不执行上传源文件这一步骤(因为该文件已经存在于远程主机了)。
+比如：远程主机有一个samba文件夹`~/code`，我将其映射到了我的Z盘，我在Z盘(也就是远程主机的`~/code`)下新建源文件`hw.cc`，然后使用本插件进行远程编译时，会直接执行编译操作(非samba下会先上传再编译)，从而提高运行速度。
+
+使用方式：
+需要在`setting.ini`指定`sambaDrive`项为远程samba映射到本地的盘符，`remoteSambaPath`为映射到本地`sambaDrive`盘符的远程主机samba文件夹路径。
+
+```ini
+;远程主机的~/目录被映射到本地的Z盘
+
+;samba mapping to local DeskDrive
+sambaDrive=Z
+
+;remote sambda Path
+remoteSambaPath=~/
+```
+
+这样，在本地的`Z盘`中的文件执行“远程编译”不会被执行上传(`UploadThisFile`和`UploadCurrentFolder`模式均不会执行)。
+
+---------
 
 经常在Win上写一些跑在Linux上的测试小代码还需要手动在Linux下执行编译命令有些麻烦，而且我用树莓派配置samba将代码共享到Win上也需要ssh上去手动编译，有点浪费时间。
 

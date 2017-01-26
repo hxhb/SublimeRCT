@@ -14,7 +14,8 @@ using namespace inifile;
 
 static IniFile setting; // global .ini  setting file
 static map<string,string> unionArgs; // args pack of .ini
-
+static string binaryAbsPath;
+static string nowTime;
 // calculate string hash
 static constexpr size_t HASH_STRING_PIECE(const char *string_piece, size_t hashNum = 0) {
 	return *string_piece ? HASH_STRING_PIECE(string_piece + 1, (hashNum * 131) + *string_piece) : hashNum;
@@ -60,7 +61,9 @@ void newIniFile(const string& iniFilePath){
 			  <<";e.g:-o/-o2\noptimizied=-o\n\n;std version e.g:c99/c11 or c++0x/c++11"<<endl
 			  <<"stdver=-std=c++11\n\n;other compile args e.g:-pthread\notherCompileArgs=-pthread\n"<<endl
 			  <<";remote host temp folder e.g:/tmp\n;It is recommended that you leave the default values(/tmp)\nremoteTempFolder=/tmp\n"<<endl
-			  <<";Upload SourceFile to remote host path\n;auto create a name is localtime of folder\nuploadTo=/tmp"<<endl;
+			  <<";Upload SourceFile to remote host path\n;auto create a name is localtime of folder\nuploadTo=/tmp\n"<<endl
+			  <<";samba mapping to local DeskDrive\nsambaDrive=\n"<<endl
+			  <<";remote sambda Path\nremoteSambaPath=";
 	settingIni.close();
 }
 
@@ -155,30 +158,22 @@ string getUplodeFullPath(const string& path){
 	return uploadTofullPath;
 }
 
-// merge pscp
-string mergeUploadPscp(const string& binaryAbsPath,const string& path,const string& other=""){
-	string pscp;
-	if(checkIniKey("password")){
-		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"",other,"-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
-	}else{
-		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"",other,"-P",unionArgs["port"],"-i",unionArgs["sshKey"],"\""+path+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
-	}
-	return pscp;
-}
-
-void uploadTo(const string& binaryAbsPath,string &pscp,const string &createNowTimeFolder,const string& localfilePath,const string& nowTime,const string& UpMode){
+void uploadOutMessage(const string &createNowTimeFolder,const string& nowTime){
 	cout<<"Check whether there is "<<unionArgs["uploadTo"]<<"..."<<endl;
 	cout<<"Create "<<unionArgs["uploadTo"]<<"/"<<nowTime<<"..."<<endl;
 	system(createNowTimeFolder.c_str());
 	cout<<"The folder "<<unionArgs["uploadTo"]<<"/"<<nowTime<<" was created successfully."<<endl;
-	// system(checkRemoteTempFolder.c_str());
+}
+string uploadTo(const string &sshPscp,const string& localfilePath,const string& UpMode){
+	string pscp;
 	switch(hashNum(UpMode)){
 		case "file"_HASH: {
-			pscp=mergeUploadPscp(binaryAbsPath,localfilePath);
+			pscp=mergeStr({"\""+sshPscp,"\""+localfilePath+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
 			break;
 		}
 		case "folder"_HASH: {
-			pscp=mergeUploadPscp(binaryAbsPath,localfilePath,"-r");
+			string localfileNoFileNamePath=string(localfilePath.begin(),localfilePath.begin()+localfilePath.find_last_of("\\"));
+			pscp=mergeStr({"\""+sshPscp,"-r","\""+localfileNoFileNamePath+"\"",unionArgs["host"]+":"+getUplodeFullPath(unionArgs["uploadTo"])});
 			break;
 		}
 		default: {
@@ -186,8 +181,18 @@ void uploadTo(const string& binaryAbsPath,string &pscp,const string &createNowTi
 		}
 	}
 	pscp+="/"+nowTime+"\"";
-	// cout<<pscp<<endl;
-	system(pscp.c_str());
+	return pscp;
+}
+string sambdaMapToLocalParse(string localSambdaPath){
+	string samba;
+	samba=getUplodeFullPath(unionArgs["remoteSambaPath"]);
+	for(auto &index:localSambdaPath){
+		if(index=='\\'){
+			index='/';
+		}
+	}
+	samba+=string(localSambdaPath.begin()+localSambdaPath.find_first_of('/')+1,localSambdaPath.end());
+	return samba;
 }
 
 void howuse(void){
@@ -201,10 +206,33 @@ void howuse(void){
 		<<"E.g.:"<<endl
 		<<"\tcommandExec D:\\TEST\\A.cc terminalRun"<<endl;
 }
+
+string sshBinaryMerge(const string& binaryName,const string& servedVerifyMode){
+	string sshCommand;
+	switch(hashNum(binaryName)){
+		case "plink"_HASH: {
+			sshCommand=mergeStr({"\""+binaryAbsPath+"\\SSHTools\\"+binaryName+"\"",unionArgs["host"],"-P",unionArgs["port"],servedVerifyMode});
+			break;
+		}
+		case "pscp"_HASH: {
+			sshCommand=mergeStr({"\""+binaryAbsPath+"\\SSHTools\\"+binaryName+"\"","-P",unionArgs["port"],servedVerifyMode});
+			break;
+		}
+		case "putty"_HASH: {
+			sshCommand=mergeStr({"\""+binaryAbsPath+"\\SSHTools\\"+binaryName+"\"",unionArgs["host"],"-P",unionArgs["port"],servedVerifyMode});
+			break;
+		}
+		default:{
+			cout<<"func sshBinaryMerge Args error!"<<endl;
+		}
+	}
+	return sshCommand;
+}
 int main(int argc, char const *argv[])
 {
 	SetConsoleTitle("RemoteCompile");
-	string binaryAbsPath=getTheProgramAbsPath();
+	binaryAbsPath=getTheProgramAbsPath();
+	nowTime=getNowTime();
 	// cout<<binaryAbsPath<<endl;
 	string localfilePath,localNoFileNamePath,filename,filenameHavePrefix;
 	string runMode;
@@ -221,7 +249,7 @@ int main(int argc, char const *argv[])
 		howuse();
 		return 0;
 	}
-
+	// cout<<localfilePath<<endl;
 	if(!checkHaveIniFile(binaryAbsPath+"\\setting.ini")){
 		newIniFile(binaryAbsPath+"\\setting.ini");
 	}else{
@@ -244,7 +272,6 @@ int main(int argc, char const *argv[])
 		system(("C:\\Windows\\System32\\notepad "+binaryAbsPath+"\\setting.ini").c_str());
 		return 0;
 	}
-
 	unionArgs["remoteTempFolder"]=getUplodeFullPath(unionArgs["remoteTempFolder"]);
 
 	// matching language chose different compiler and standard version
@@ -270,31 +297,37 @@ int main(int argc, char const *argv[])
 			}
 	}
 
+	bool sambaState=false;
+	if(checkIniKey("sambaDrive")&&checkIniKey("remoteSambaPath")){
+		sambaState=true;
+	}
 	// merge args
 	string pscp;
 	string plink;
 	string sshlink;
 	string cleanRemoteTemp;
 	string checkRemoteTempFolder,createNowTimeFolder;
-	string nowTime=getNowTime();
-	string commandArgs=mergeStr({unionArgs["compiler"],unionArgs["optimizied"],filename,filename+"*",unionArgs["stdver"],unionArgs["otherCompileArgs"]});
+	string commandArgs=mergeStr({unionArgs["compiler"],unionArgs["optimizied"],filename,filenameHavePrefix,unionArgs["stdver"],unionArgs["otherCompileArgs"]});
 	string start="./"+filename;
 	string sshclear="rm "+filename+"*";
+	string servedVerifyMode;
 	if(checkIniKey("password")){
-		checkRemoteTempFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["remoteTempFolder"],"\"\""});
-		createNowTimeFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\"\""});
-		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"","-P",unionArgs["port"],"-pw",unionArgs["password"],"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"],"\""});
-		plink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\"\""});
-		sshlink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\putty\"","-P",unionArgs["port"],"-pw",unionArgs["password"],unionArgs["host"],"\""});
-		// string year=string(nowTime.begin()+nowTime.begin()+4);
-		cleanRemoteTemp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-pw",unionArgs["password"],"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\"\""});
+		servedVerifyMode="-pw "+unionArgs["password"];
 	}else{
-		checkRemoteTempFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKey"],"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"],"\"\""});
-		createNowTimeFolder=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKey"],"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime(),"\"\""});
-		pscp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\pscp\"","-P",unionArgs["port"],"-i",unionArgs["sshKey"],"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"],"\""});
-		plink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],"-i",unionArgs["sshKey"],"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear,"\"\""});
-		sshlink=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\putty\"","-P",unionArgs["port"],"-i",unionArgs["sshKey"],unionArgs["host"],"\""});
-		cleanRemoteTemp=mergeStr({"\"\""+binaryAbsPath+"\\SSHTools\\plink\"",unionArgs["host"],"-P",unionArgs["port"],unionArgs["sshKey"],"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp","\"\""});
+		servedVerifyMode="-i ",unionArgs["sshKey"];
+	}
+
+	// merge command line
+	string sshPlink=sshBinaryMerge("plink",servedVerifyMode);
+	string sshPscp=sshBinaryMerge("pscp",servedVerifyMode);
+	string sshPutty=sshBinaryMerge("putty",servedVerifyMode);
+	{
+		checkRemoteTempFolder=mergeStr({"\""+sshPlink,"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"]+"\"\""});
+		createNowTimeFolder=mergeStr({"\""+sshPlink,"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime()+"\"\""});
+		pscp=mergeStr({"\""+sshPscp,"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]+"\""});
+		plink=mergeStr({"\""+sshPlink,"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear+"\"\""});
+		sshlink=mergeStr({"\""+sshPutty+"\""});
+		cleanRemoteTemp=mergeStr({"\""+sshPlink,"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp"+"\"\""});
 	}
 	// cout<<checkRemoteTempFolder<<endl
 	// 	<<createNowTimeFolder<<endl
@@ -306,46 +339,93 @@ int main(int argc, char const *argv[])
 		cout<<"Check whether there is "<<unionArgs["remoteTempFolder"]<<"..."<<endl;
 		system(checkRemoteTempFolder.c_str());
 	}
-
-	// choose run mode
-	switch(hashNum(runMode)){
-		case "panelRun"_HASH: {
-			// cout<<"directRun"<<endl;
-			system(pscp.c_str());
-			system(plink.c_str());
-			break;
+	if(!sambaState||(*localfilePath.begin()!=*unionArgs["sambaDrive"].begin())){
+		// cout<<"Upload"<<endl;
+		// choose run mode
+		switch(hashNum(runMode)){
+			case "panelRun"_HASH: {
+				// cout<<"directRun"<<endl;
+				system(pscp.c_str());
+				system(plink.c_str());
+				break;
+			}
+			case "terminalRun"_HASH: {
+				// cout<<"terminalRun"<<endl;
+				system(pscp.c_str());
+				system(plink.c_str());
+				break;
+			}
+			case "openTerminal"_HASH: {
+				// cout<<sshlink<<endl;
+				cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
+				system(sshlink.c_str());
+				break;
+			}
+			case "uploadThisFile"_HASH: {
+				uploadOutMessage(createNowTimeFolder,nowTime);
+				pscp=uploadTo(sshPscp,localfilePath,"file");
+				// cout<<pscp<<endl;
+				system(pscp.c_str());
+				cout<<"Successfully upload "<<filenameHavePrefix<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
+				break;
+			}
+			case "uploadCurrentFolder"_HASH: {
+				uploadOutMessage(createNowTimeFolder,nowTime);
+				pscp=uploadTo(sshPscp,localfilePath,"folder");
+				// cout<<pscp<<endl;
+				system(pscp.c_str());
+				cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
+				break;
+			}
+			case "cleanUpTemp"_HASH: {
+				cout<<"clean up "<<unionArgs["host"]<<":"<<unionArgs["uploadTo"]<<"..."<<endl;
+				system(cleanRemoteTemp.c_str());
+				cout<<"Clean up the success."<<endl;
+				break;
+			}
+			default: {
+				cout<<"Parameter error!"<<endl;
+			}
 		}
-		case "terminalRun"_HASH: {
-			// cout<<"terminalRun"<<endl;
-			system(pscp.c_str());
-			system(plink.c_str());
-			break;
-		}
-		case "openTerminal"_HASH: {
-			// cout<<sshlink<<endl;
-			cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
-			system(sshlink.c_str());
-			break;
-		}
-		case "uploadThisFile"_HASH: {
-			uploadTo(binaryAbsPath,pscp,createNowTimeFolder,localfilePath,nowTime,"file");
-			// string SourceFilePath=converCharPtoStr(argv[1]);
-			cout<<"Successfully upload "<<filenameHavePrefix<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
-			break;
-		}
-		case "uploadCurrentFolder"_HASH: {
-			uploadTo(binaryAbsPath,pscp,createNowTimeFolder,localNoFileNamePath,nowTime,"folder");
-			cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
-			break;
-		}
-		case "cleanUpTemp"_HASH: {
-			cout<<"clean up "<<unionArgs["host"]<<":"<<unionArgs["uploadTo"]<<"..."<<endl;
-			system(cleanRemoteTemp.c_str());
-			cout<<"Clean up the success."<<endl;
-			break;
-		}
-		default: {
-			cout<<"Parameter error!"<<endl;
+	}else{
+		// cout<<"direct"<<endl;
+		string currentFileOnSambaPath=sambdaMapToLocalParse(localfilePath);
+		string currentSambaPath=string(currentFileOnSambaPath.begin(),currentFileOnSambaPath.begin()+currentFileOnSambaPath.find_last_of("/")+1);
+		// cout<<currentSambaPath<<endl;
+		string panelRunPlink=mergeStr({"\""+sshPlink,"\"cd "+currentSambaPath,"&&"+commandArgs+"&&"+start,"\"\""});
+		// cout<<panelRunPlink<<endl;
+		switch(hashNum(runMode)){
+			case "panelRun"_HASH: {
+				system(panelRunPlink.c_str());
+				break;
+			}
+			case "terminalRun"_HASH: {
+				system(panelRunPlink.c_str());
+				break;
+			}
+			case "openTerminal"_HASH: {
+				// cout<<sshlink<<endl;
+				cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
+				system(sshlink.c_str());
+				break;
+			}
+			case "uploadThisFile"_HASH: {
+				cout<<"current file in samba scope.\nPlease direct panelRun/terminalRun Mode."<<endl;
+				break;
+			}
+			case "uploadCurrentFolder"_HASH: {
+				cout<<"current file in samba scope.\nPlease direct panelRun/terminalRun Mode."<<endl;
+				break;
+			}
+			case "cleanUpTemp"_HASH: {
+				cout<<"clean up "<<unionArgs["host"]<<":"<<unionArgs["uploadTo"]<<"..."<<endl;
+				system(cleanRemoteTemp.c_str());
+				cout<<"Clean up the success."<<endl;
+				break;
+			}
+			default: {
+				cout<<"Parameter error!"<<endl;
+			}
 		}
 	}
 	return 0;
