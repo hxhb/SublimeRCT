@@ -185,7 +185,7 @@ string uploadTo(const string &sshPscp,const string& localfilePath,const string& 
 }
 string sambdaMapToLocalParse(string localSambdaPath){
 	string samba;
-	samba=getUplodeFullPath(unionArgs["remoteSambaPath"]);
+	samba=getUplodeFullPath(unionArgs["remoteSambaPath"])+"/";
 	for(auto &index:localSambdaPath){
 		if(index=='\\'){
 			index='/';
