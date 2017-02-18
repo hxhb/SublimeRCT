@@ -34,7 +34,7 @@ remoteSambaPath=~/
 代码放在Github上：[sublimeRemoteCompile](https://github.com/hxhb/sublimeRemoteCompile)，使用了一些`C++11`的特性，编译时需指定。
 
 裹了一层ssh操作，用来写一些简单的测试代码还是挺爽的，错误信息也会捕获到SublimeText的Panel中。复杂项目可以使用VisualStudio+VisualGDB。
-通过ini读取配置信息，具有~六~七种运行模式：
+通过ini读取配置信息，具有七种运行模式：
 >已根据2017.02.18更新修改下列表格。
 
 | 参数                  | 模式                        |
@@ -69,23 +69,27 @@ remoteSambaPath=~/
      [
           {
                 "name": "TerminalRun",
-                 "cmd": ["start", "cmd", "/k","remotecompile","${file}","terminalRun"]
+                 "cmd": ["start", "cmd", "/k","remotecompile_clangxx","${file}","terminalRun"]
           },
           {
                 "name": "UploadThisFile",
-                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadThisFile"]
+                 "cmd": ["cmd", "/c","remotecompile_clangxx","${file}","uploadThisFile"]
           },
           {
-                "name": "UploadCurrentFolder",
-                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadCurrentFolder"]
+                "name": "UploadCurrentFolderAndRun",
+                 "cmd": ["cmd", "/c","remotecompile_clangxx","${file}","uploadCurrentFolderAndRun"]
+          },
+          {
+                "name": "UploadCurrentFolderAndTerminalRun",
+                 "cmd": ["start", "cmd", "/k","remotecompile_clangxx","${file}","uploadCurrentFolderAndTerminalRun"]
           },
           {
                 "name": "CleanUpTemp",
-                "cmd": ["cmd", "/k","remotecompile","${file}","cleanUpTemp"]
+                "cmd": ["cmd", "/k","remotecompile_clangxx","${file}","cleanUpTemp"]
           },
           {
                 "name": "OpenTerminal",
-                 "cmd": ["cmd", "/k","remotecompile","${file}","openTerminal"]
+                 "cmd": ["cmd", "/k","remotecompile_clangxx","${file}","openTerminal"]
           }
      ]
 }
