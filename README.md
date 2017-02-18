@@ -53,7 +53,7 @@ remoteSambaPath=~/
 编译时会根据源文件后缀判断语言，C语言默认使用gcc编译，C++则会使用g++，对应的标准版本则是c99和c++11。建议在Linux环境上安装clang，然后在`setting.ini`中指定编译器为`clang`，错误提示好很多。如果指定`clang`也会自动匹配后缀选择编译器为`clang`或者`clang++`。
 #### 如何使用？
 
-在[这里](https://github.com/hxhb/sublimeRemoteCompile/releases/tag/v1.0)下载二进制压缩包，解压到本地的一个目录中。
+在[这里](https://github.com/hxhb/sublimeRemoteCompile/releases)下载二进制压缩包，解压到本地的一个目录中。
 
 然后在SublimeText中添加一个`build system`，然后将下面的代码填入其中：
 
@@ -95,7 +95,7 @@ remoteSambaPath=~/
 }
 ```
 
-在`path`处填上你将压缩包解压到的位置。
+在`path`处填上你将压缩包解压到的位置(也就是本程序在你电脑中的绝对路径)。
 然后可以简单写个代码，按`Ctrl+Shift+B`就可以看到构建系统列表了：
 
 ![00](http://7xilo9.com1.z0.glb.clouddn.com/blog-images/sublimeTextRemoteCompilePlugins/00.png)
