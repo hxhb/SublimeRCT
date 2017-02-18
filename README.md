@@ -1,3 +1,10 @@
+#### Update:2017.02.18
+1. 修改执行逻辑
+将`UploadCurrentFolder`改为`UploadCurrentFolderAndRun`,上传当前文件所在的文件夹，并在上传完成后执行编译和运行操作。
+2. 添加`UploadCurrentFolderAndTerminalRun`模式，会上传当前文件所在的文件夹并在新的窗口中打开运行。
+3. 使用上面两种模式上传的文件夹均不会自动删除，其路径为ini中设定的`remoteTempFolder/RunTime`，RunTime为执行上传操作时获取的时间点。
+4. 当源文件在Samba目录时以上两种上传模式均不会执行。
+
 #### Update:2017.01.26
 1. 优化代码。
 2. 增加另一种机制：如果将远程主机的目录通过samba映射到本地，对其中的源文件进行编译时直接对该远程目录的源文件进行操作(将本地映射路径转换为远程主机的绝对路径)，不执行上传源文件这一步骤(因为该文件已经存在于远程主机了)。
@@ -27,14 +34,16 @@ remoteSambaPath=~/
 代码放在Github上：[sublimeRemoteCompile](https://github.com/hxhb/sublimeRemoteCompile)，使用了一些`C++11`的特性，编译时需指定。
 
 裹了一层ssh操作，用来写一些简单的测试代码还是挺爽的，错误信息也会捕获到SublimeText的Panel中。复杂项目可以使用VisualStudio+VisualGDB。
-通过ini读取配置信息，具有六种运行模式：
+通过ini读取配置信息，具有~六~七种运行模式：
+>已根据2017.02.18更新修改下列表格。
 
 | 参数                  | 模式                        |
 | :-----------------: | :-----------------------: |
 | panelRun            | 运行在SublimeText的Panel      |
 | terminalRun         | 在新窗口中运行                   |
 | uploadThisFile      | 上传当前打开的文件到远程主机的临时目录       |
-| uploadCurrentFolder | 上传当前打开的文件所在的文件夹到远程主机的临时目录 |
+| UploadCurrentFolderAndRun | 上传当前打开的文件所在的文件夹到远程主机的临时目录并在ST的panel中执行 |
+| UploadCurrentFolderAndTerminalRun | 上传当前打开的文件所在的文件夹到远程主机的临时目录并在新窗口中执行 |
 | cleanUpTemp         | 清理远程主机的临时目录               |
 | openTerminal        | 打开一个SSH连接窗口到远程主机          |
 

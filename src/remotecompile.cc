@@ -197,12 +197,13 @@ string sambdaMapToLocalParse(string localSambdaPath){
 
 void howuse(void){
 	cout<<"Usage:\n\tTheProgram SourceFileFullPath RunMode"<<endl;
-	cout<<"RunMode:\n\tpanelRun: Run on SublimeText Panel."<<endl
-		<<"\tterminalRun: Run on a new window."<<endl
-		<<"\tuploadThisFile: Upload current file to remoteHost."<<endl
-		<<"\tuploadThisFolder: Upload current folder to remoteHost."<<endl
-		<<"\tcleanUpRemoteTemp: clean up remote host temp folder."<<endl
-		<<"\topenTerminal: Open a SSH link to remoteHost."<<endl
+	cout<<"RunMode:\n  panelRun: \n\tRun on SublimeText Panel."<<endl
+		<<"  terminalRun: \n\tRun on a new window."<<endl
+		<<"  uploadThisFile: \n\tUpload current file to remoteHost."<<endl
+		<<"  uploadThisFolderAndRun: \n\tUpload current folder to remoteHost And Run in SublimeText Panel."<<endl
+		<<"  uploadCurrentFolderAndTerminalRun: \n\tUpload current folder to remoteHost And Run in NewWindow."<<endl
+		<<"  cleanUpRemoteTemp: \n\tclean up remote host temp folder."<<endl
+		<<"  openTerminal: \n\tOpen a SSH link to remoteHost."<<endl
 		<<"E.g.:"<<endl
 		<<"\tcommandExec D:\\TEST\\A.cc terminalRun"<<endl;
 }
@@ -234,7 +235,7 @@ int main(int argc, char const *argv[])
 	binaryAbsPath=getTheProgramAbsPath();
 	nowTime=getNowTime();
 	// cout<<binaryAbsPath<<endl;
-	string localfilePath,localNoFileNamePath,filename,filenameHavePrefix;
+	string localfilePath,localNoFileNamePath,filename,foldername,filenameHavePrefix;
 	string runMode;
 
 	if(argc==3){
@@ -242,8 +243,14 @@ int main(int argc, char const *argv[])
 		runMode=converCharPtoStr(argv[2]);
 		size_t lastBackslash=localfilePath.find_last_of('\\');
 		size_t dotlast=localfilePath.find_last_of('.');
+
+		// 获取要上传的文件夹名称
+		foldername=string(localfilePath.begin()+string(localfilePath.begin(),localfilePath.begin()+lastBackslash).find_last_of('\\')+1,localfilePath.begin()+lastBackslash);
+		// 获取当前的文件名称
 		filename=string(localfilePath.begin()+lastBackslash+1,localfilePath.begin()+dotlast);
+		// 带文件后缀的当前文件名
 		filenameHavePrefix=string(localfilePath.begin()+lastBackslash+1,localfilePath.end());
+		// 当前文件夹所在的绝对路径
 		localNoFileNamePath=string(localfilePath.begin(),localfilePath.begin()+lastBackslash);
 	}else{
 		howuse();
@@ -307,6 +314,7 @@ int main(int argc, char const *argv[])
 	string sshlink;
 	string cleanRemoteTemp;
 	string checkRemoteTempFolder,createNowTimeFolder;
+	string uploadAndRun;
 	string commandArgs=mergeStr({unionArgs["compiler"],unionArgs["optimizied"],filename,filenameHavePrefix,unionArgs["stdver"],unionArgs["otherCompileArgs"]});
 	string start="./"+filename;
 	string sshclear="rm "+filename+"*";
@@ -322,11 +330,19 @@ int main(int argc, char const *argv[])
 	string sshPscp=sshBinaryMerge("pscp",servedVerifyMode);
 	string sshPutty=sshBinaryMerge("putty",servedVerifyMode);
 	{
+		// 检查远程主机的临时目录是否存在
 		checkRemoteTempFolder=mergeStr({"\""+sshPlink,"\"[ -d",unionArgs["remoteTempFolder"],"]","&&","echo The folder exists.Is about to begin execution.|","mkdir -p",unionArgs["remoteTempFolder"]+"\"\""});
+		// 在远程主机的临时目录下创建当前时间点的文件夹
 		createNowTimeFolder=mergeStr({"\""+sshPlink,"\"[ -d",unionArgs["uploadTo"]+"/"+nowTime,"]","&&","echo The folder exists.Is about to begin execution.||","mkdir -p",unionArgs["uploadTo"]+"/"+getNowTime()+"\"\""});
+		// 上传文件夹并执行
+		uploadAndRun=mergeStr({"\""+sshPlink,"\"cd "+unionArgs["remoteTempFolder"]+"/"+nowTime+"/"+foldername,"&&"+commandArgs+"&&"+start+"\"\""});
+		// 上传文件/文件夹
 		pscp=mergeStr({"\""+sshPscp,"\""+localfilePath+"\"",unionArgs["host"]+":"+unionArgs["remoteTempFolder"]+"\""});
+		// 编译并执行
 		plink=mergeStr({"\""+sshPlink,"\"cd "+unionArgs["remoteTempFolder"],"&&"+commandArgs+"&&"+start,"&&"+sshclear+"\"\""});
+		// 打开一个SSH连接窗口
 		sshlink=mergeStr({"\""+sshPutty+"\""});
+		// 清理远程主机的临时目录
 		cleanRemoteTemp=mergeStr({"\""+sshPlink,"\"cd "+unionArgs["remoteTempFolder"],"&&","rm -rf "+string(nowTime.begin(),nowTime.begin()+4)+"* *.cc *.c *.cpp .h .hpp"+"\"\""});
 	}
 	// cout<<checkRemoteTempFolder<<endl
@@ -352,6 +368,7 @@ int main(int argc, char const *argv[])
 			case "terminalRun"_HASH: {
 				// cout<<"terminalRun"<<endl;
 				system(pscp.c_str());
+				cout<<endl<<"Run Resault:"<<endl;
 				system(plink.c_str());
 				break;
 			}
@@ -364,17 +381,33 @@ int main(int argc, char const *argv[])
 			case "uploadThisFile"_HASH: {
 				uploadOutMessage(createNowTimeFolder,nowTime);
 				pscp=uploadTo(sshPscp,localfilePath,"file");
-				// cout<<pscp<<endl;
+				cout<<pscp<<endl;
+				// cout<<uploadAndRun<<endl;
 				system(pscp.c_str());
 				cout<<"Successfully upload "<<filenameHavePrefix<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
 				break;
 			}
-			case "uploadCurrentFolder"_HASH: {
+			case "uploadCurrentFolderAndRun"_HASH: {
 				uploadOutMessage(createNowTimeFolder,nowTime);
 				pscp=uploadTo(sshPscp,localfilePath,"folder");
 				// cout<<pscp<<endl;
+				// cout<<uploadAndRun<<endl;
 				system(pscp.c_str());
 				cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
+				cout<<endl<<"Run Resault:"<<endl;
+				system(uploadAndRun.c_str());
+				break;
+			}
+			case "uploadCurrentFolderAndTerminalRun"_HASH: {
+				// uploadOutMessage(createNowTimeFolder,nowTime);
+				system(createNowTimeFolder.c_str());
+				pscp=uploadTo(sshPscp,localfilePath,"folder");
+				// cout<<pscp<<endl;
+				// cout<<uploadAndRun<<endl;
+				system(pscp.c_str());
+				// cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
+				cout<<endl<<"Run Resault:"<<endl;
+				system(uploadAndRun.c_str());
 				break;
 			}
 			case "cleanUpTemp"_HASH: {
@@ -413,7 +446,11 @@ int main(int argc, char const *argv[])
 				cout<<"current file in samba scope.\nPlease direct panelRun/terminalRun Mode."<<endl;
 				break;
 			}
-			case "uploadCurrentFolder"_HASH: {
+			case "uploadCurrentFolderAndRun"_HASH: {
+				cout<<"current file in samba scope.\nPlease direct panelRun/terminalRun Mode."<<endl;
+				break;
+			}
+			case "uploadCurrentFolderAndTerminalRun"_HASH: {
 				cout<<"current file in samba scope.\nPlease direct panelRun/terminalRun Mode."<<endl;
 				break;
 			}
