@@ -1,5 +1,5 @@
-#ifndef _INIFILE_HPP
-#define _INIFILE_HPP
+#ifndef _INISETTING_HPP
+#define _INISETTING_HPP
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,7 +10,7 @@
 #include <string.h>
 
 using namespace std;
-namespace inifile
+namespace iniFile
 {
 const int RET_OK  = 0;
 const int RET_ERR = -1;
@@ -34,11 +34,11 @@ struct IniSection {
     vector<IniItem> items;
 };
 
-class IniFile
+class iniSetting
 {
 public:
-    IniFile();
-    ~IniFile() {
+    iniSetting();
+    ~iniSetting() {
         release();
     }
 
@@ -120,18 +120,18 @@ private:
 }
 
 
-namespace inifile
+namespace iniFile
 {
 
 int INI_BUF_SIZE = 2048;
 
-IniFile::IniFile()
+iniSetting::iniSetting()
 {
     flags_.push_back("#");
     flags_.push_back(";");
 }
 
-bool IniFile::parse(const string &content, string &key, string &value, char c/*= '='*/)
+bool iniSetting::parse(const string &content, string &key, string &value, char c/*= '='*/)
 {
     int i = 0;
     int len = content.length();
@@ -149,7 +149,7 @@ bool IniFile::parse(const string &content, string &key, string &value, char c/*=
     return false;
 }
 
-int IniFile::getline(string &str, FILE *fp)
+int iniSetting::getline(string &str, FILE *fp)
 {
     int plen = 0;
     int buf_size = INI_BUF_SIZE * sizeof(char);
@@ -197,7 +197,7 @@ int IniFile::getline(string &str, FILE *fp)
     return str.length();
 
 }
-int IniFile::load(const string &filename)
+int iniSetting::load(const string &filename)
 {
     release();
     fname_ = filename;
@@ -305,12 +305,12 @@ int IniFile::load(const string &filename)
     return 0;
 }
 
-int IniFile::save()
+int iniSetting::save()
 {
     return saveas(fname_);
 }
 
-int IniFile::saveas(const string &filename)
+int iniSetting::saveas(const string &filename)
 {
     string data = "";
 
@@ -344,7 +344,7 @@ int IniFile::saveas(const string &filename)
 
     return 0;
 }
-IniSection *IniFile::getSection(const string &section /*=""*/)
+IniSection *iniSetting::getSection(const string &section /*=""*/)
 {
     iterator it = sections_.find(section);
 
@@ -355,7 +355,7 @@ IniSection *IniFile::getSection(const string &section /*=""*/)
     return NULL;
 }
 
-string IniFile::getStringValue(const string &section, const string &key, int &ret)
+string iniSetting::getStringValue(const string &section, const string &key, int &ret)
 {
     string value, comment;
 
@@ -364,7 +364,7 @@ string IniFile::getStringValue(const string &section, const string &key, int &re
     return value;
 }
 
-string IniFile::getStringValue(const string &section, const string &key)
+string iniSetting::getStringValue(const string &section, const string &key)
 {
     string value, comment;
 
@@ -373,7 +373,7 @@ string IniFile::getStringValue(const string &section, const string &key)
     return value;
 }
 
-int IniFile::getIntValue(const string &section, const string &key, int &ret)
+int iniSetting::getIntValue(const string &section, const string &key, int &ret)
 {
     string value, comment;
 
@@ -382,7 +382,7 @@ int IniFile::getIntValue(const string &section, const string &key, int &ret)
     return atoi(value.c_str());
 }
 
-double IniFile::getDoubleValue(const string &section, const string &key, int &ret)
+double iniSetting::getDoubleValue(const string &section, const string &key, int &ret)
 {
     string value, comment;
 
@@ -392,12 +392,12 @@ double IniFile::getDoubleValue(const string &section, const string &key, int &re
 
 }
 
-int IniFile::getValue(const string &section, const string &key, string &value)
+int iniSetting::getValue(const string &section, const string &key, string &value)
 {
     string comment;
     return getValue(section, key, value, comment);
 }
-int IniFile::getValue(const string &section, const string &key, string &value, string &comment)
+int iniSetting::getValue(const string &section, const string &key, string &value, string &comment)
 {
     IniSection *sect = getSection(section);
 
@@ -413,12 +413,12 @@ int IniFile::getValue(const string &section, const string &key, string &value, s
 
     return RET_ERR;
 }
-int IniFile::getValues(const string &section, const string &key, vector<string> &values)
+int iniSetting::getValues(const string &section, const string &key, vector<string> &values)
 {
     vector<string> comments;
     return getValues(section, key, values, comments);
 }
-int IniFile::getValues(const string &section, const string &key,
+int iniSetting::getValues(const string &section, const string &key,
                        vector<string> &values, vector<string> &comments)
 {
     string value, comment;
@@ -443,13 +443,13 @@ int IniFile::getValues(const string &section, const string &key,
     return (values.size() ? RET_OK : RET_ERR);
 
 }
-bool IniFile::hasSection(const string &section)
+bool iniSetting::hasSection(const string &section)
 {
     return (getSection(section) != NULL);
 
 }
 
-bool IniFile::hasKey(const string &section, const string &key)
+bool iniSetting::hasKey(const string &section, const string &key)
 {
     IniSection *sect = getSection(section);
 
@@ -463,7 +463,7 @@ bool IniFile::hasKey(const string &section, const string &key)
 
     return false;
 }
-int IniFile::getSectionComment(const string &section, string &comment)
+int iniSetting::getSectionComment(const string &section, string &comment)
 {
     comment = "";
     IniSection *sect = getSection(section);
@@ -475,7 +475,7 @@ int IniFile::getSectionComment(const string &section, string &comment)
 
     return RET_ERR;
 }
-int IniFile::setSectionComment(const string &section, const string &comment)
+int iniSetting::setSectionComment(const string &section, const string &comment)
 {
     IniSection *sect = getSection(section);
 
@@ -487,7 +487,7 @@ int IniFile::setSectionComment(const string &section, const string &comment)
     return RET_ERR;
 }
 
-int IniFile::setValue(const string &section, const string &key,
+int iniSetting::setValue(const string &section, const string &key,
                       const string &value, const string &comment /*=""*/)
 {
     IniSection *sect = getSection(section);
@@ -529,15 +529,15 @@ int IniFile::setValue(const string &section, const string &key,
     return RET_OK;
 
 }
-void IniFile::getCommentFlags(vector<string> &flags)
+void iniSetting::getCommentFlags(vector<string> &flags)
 {
     flags = flags_;
 }
-void IniFile::setCommentFlags(const vector<string> &flags)
+void iniSetting::setCommentFlags(const vector<string> &flags)
 {
     flags_ = flags;
 }
-void IniFile::deleteSection(const string &section)
+void iniSetting::deleteSection(const string &section)
 {
     IniSection *sect = getSection(section);
 
@@ -547,7 +547,7 @@ void IniFile::deleteSection(const string &section)
         delete sect;
     }
 }
-void IniFile::deleteKey(const string &section, const string &key)
+void iniSetting::deleteKey(const string &section, const string &key)
 {
     IniSection *sect = getSection(section);
 
@@ -562,7 +562,7 @@ void IniFile::deleteKey(const string &section, const string &key)
 
 }
 
-void IniFile::release()
+void iniSetting::release()
 {
     fname_ = "";
 
@@ -574,7 +574,7 @@ void IniFile::release()
 
 }
 
-bool IniFile::isComment(const string &str)
+bool iniSetting::isComment(const string &str)
 {
     bool ret = false;
 
@@ -600,7 +600,7 @@ bool IniFile::isComment(const string &str)
     return ret;
 }
 //for debug
-void IniFile::print()
+void iniSetting::print()
 {
     printf("filename:[%s]\n", fname_.c_str());
 
@@ -623,7 +623,7 @@ void IniFile::print()
     }
 }
 
-void IniFile::trimleft(string &str, char c/*=' '*/)
+void iniSetting::trimleft(string &str, char c/*=' '*/)
 {
     //trim head
 
@@ -640,7 +640,7 @@ void IniFile::trimleft(string &str, char c/*=' '*/)
     }
 }
 
-void IniFile::trimright(string &str, char c/*=' '*/)
+void iniSetting::trimright(string &str, char c/*=' '*/)
 {
     //trim tail
     int i = 0;
@@ -656,7 +656,7 @@ void IniFile::trimright(string &str, char c/*=' '*/)
     str = string(str, 0, i + 1);
 }
 
-void IniFile::trim(string &str)
+void iniSetting::trim(string &str)
 {
     //trim head
 

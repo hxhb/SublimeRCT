@@ -1,4 +1,4 @@
-#include "inifile.hpp"
+#include "iniSetting.hpp"
 #include <iostream>
 #include <fstream>
 #include <io.h>
@@ -8,11 +8,11 @@
 #include <direct.h>
 #include <windows.h>
 
-using namespace inifile;
+using namespace iniFile;
 
 #define MAXPATH 512
 
-static IniFile setting; // global .ini  setting file
+static iniSetting setting; // global .ini  setting file
 static map<string,string> unionArgs; // args pack of .ini
 static string binaryAbsPath;
 static string nowTime;
