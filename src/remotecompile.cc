@@ -368,7 +368,7 @@ int main(int argc, char const *argv[])
 			case "terminalRun"_HASH: {
 				// cout<<"terminalRun"<<endl;
 				system(pscp.c_str());
-				cout<<endl<<"Run Resault:"<<endl;
+				// cout<<endl<<"Run Resault:"<<endl;
 				system(plink.c_str());
 				break;
 			}
@@ -394,7 +394,7 @@ int main(int argc, char const *argv[])
 				// cout<<uploadAndRun<<endl;
 				system(pscp.c_str());
 				cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
-				cout<<endl<<"Run Resault:"<<endl;
+				// cout<<endl<<"Run Resault:"<<endl;
 				system(uploadAndRun.c_str());
 				break;
 			}
