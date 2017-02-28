@@ -9,27 +9,27 @@
      [
           {
                 "name": "TerminalRun",
-                 "cmd": ["start","console_runner.exe","remotecompile_clangxx","${file}","terminalRun"]
+                 "cmd": ["start","console_runner.exe","remotecompile","${file}","terminalRun"]
           },
           {
                 "name": "UploadThisFile",
-                 "cmd": ["cmd", "/c","remotecompile_clangxx","${file}","uploadThisFile"]
+                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadThisFile"]
           },
           {
                 "name": "UploadCurrentFolderAndRun",
-                 "cmd": ["cmd", "/c","remotecompile_clangxx","${file}","uploadCurrentFolderAndRun"]
+                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadCurrentFolderAndRun"]
           },
           {
                 "name": "UploadCurrentFolderAndTerminalRun",
-                 "cmd": ["start","console_runner.exe","remotecompile_clangxx","${file}","uploadCurrentFolderAndTerminalRun"]
+                 "cmd": ["start","console_runner.exe","remotecompile","${file}","uploadCurrentFolderAndTerminalRun"]
           },
           {
                 "name": "CleanUpTemp",
-                "cmd": ["cmd", "/k","remotecompile_clangxx","${file}","cleanUpTemp"]
+                "cmd": ["cmd", "/k","remotecompile","${file}","cleanUpTemp"]
           },
           {
                 "name": "OpenTerminal",
-                 "cmd": ["cmd", "/k","remotecompile_clangxx","${file}","openTerminal"]
+                 "cmd": ["cmd", "/k","remotecompile","${file}","openTerminal"]
           }
      ]
 }
