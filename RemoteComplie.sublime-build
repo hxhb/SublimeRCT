@@ -9,7 +9,7 @@
      [
           {
                 "name": "TerminalRun",
-                 "cmd": ["start", "cmd", "/k","remotecompile_clangxx","${file}","terminalRun"]
+                 "cmd": ["start","console_runner.exe","remotecompile_clangxx","${file}","terminalRun"]
           },
           {
                 "name": "UploadThisFile",
@@ -21,7 +21,7 @@
           },
           {
                 "name": "UploadCurrentFolderAndTerminalRun",
-                 "cmd": ["start", "cmd", "/k","remotecompile_clangxx","${file}","uploadCurrentFolderAndTerminalRun"]
+                 "cmd": ["start","console_runner.exe","remotecompile_clangxx","${file}","uploadCurrentFolderAndTerminalRun"]
           },
           {
                 "name": "CleanUpTemp",
