@@ -16,6 +16,7 @@ static iniSetting setting; // global .ini  setting file
 static map<string,string> unionArgs; // args pack of .ini
 static string binaryAbsPath;
 static string nowTime;
+
 // calculate string hash
 static constexpr size_t HASH_STRING_PIECE(const char *string_piece, size_t hashNum = 0) {
 	return *string_piece ? HASH_STRING_PIECE(string_piece + 1, (hashNum * 131) + *string_piece) : hashNum;
@@ -31,7 +32,6 @@ static size_t hashNum(const string &str) {
 bool checkIniKey(const std::string& key){
 	const std::string section("RemoteCompileSSHSetting");
 	int keyState=0;
-	// cout<<::setting.getStringValue(section, key)<<endl;
 	if(::setting.getStringValue(section, key, keyState).size()==0){
 		return false;
 	}else{
@@ -42,12 +42,9 @@ bool checkIniKey(const std::string& key){
 
 // check have .ini file
 bool checkHaveIniFile(const string& execPath){
-	// cout<<execPath<<endl;
 	if(!access(execPath.c_str(),F_OK)){
-		// printf("have\n");
 		return true;
 	}else{
-		// printf("no\n");
 		return false;
 	}
 }
@@ -102,7 +99,7 @@ void fixWinPathDoubleSprit(string& path){
 	path=temp;
 }
 
-// get The exec programming fullPath
+// get The programm fullPath (deprecated)
 string getExecAbsPath(void){
 	char buffer[MAXPATH];
 	getcwd(buffer, MAXPATH);
@@ -115,16 +112,13 @@ string getTheProgramAbsPath(void){
 	memset(exeFullPath,0,MAX_PATH);
 	GetModuleFileName(NULL,exeFullPath,MAX_PATH);
 	string binaryHaveBinaryNameAbsPath=converCharPtoStr(exeFullPath);
-	// cout<<converCharPtoStr(exeFullPath)<<endl;
 	string binaryAbsPath=string(binaryHaveBinaryNameAbsPath.begin(),binaryHaveBinaryNameAbsPath.begin()+binaryHaveBinaryNameAbsPath.find_last_of("\\"));
-	// fixWinPathDoubleSprit(binaryAbsPath);
-	// cout<<binaryAbsPath<<endl;
 	return binaryAbsPath;
 }
+
 // get Source file prefix name
 string getFilePrefix(const string& SourceFilePath){
 	string temp(SourceFilePath.begin()+SourceFilePath.find_last_of('.')+1,SourceFilePath.end());
-	// cout<<temp<<endl;
 	return temp;
 }
 
@@ -231,10 +225,9 @@ string sshBinaryMerge(const string& binaryName,const string& servedVerifyMode){
 }
 int main(int argc, char const *argv[])
 {
-	SetConsoleTitle("RemoteCompile");
+	SetConsoleTitle("sublimeRemoteCompile");
 	binaryAbsPath=getTheProgramAbsPath();
 	nowTime=getNowTime();
-	// cout<<binaryAbsPath<<endl;
 	string localfilePath,localNoFileNamePath,filename,foldername,filenameHavePrefix;
 	string runMode;
 
@@ -256,7 +249,6 @@ int main(int argc, char const *argv[])
 		howuse();
 		return 0;
 	}
-	// cout<<localfilePath<<endl;
 	if(!checkHaveIniFile(binaryAbsPath+"\\setting.ini")){
 		newIniFile(binaryAbsPath+"\\setting.ini");
 	}else{
@@ -356,24 +348,18 @@ int main(int argc, char const *argv[])
 		system(checkRemoteTempFolder.c_str());
 	}
 	if(!sambaState||(*localfilePath.begin()!=*unionArgs["sambaDrive"].begin())){
-		// cout<<"Upload"<<endl;
-		// choose run mode
 		switch(hashNum(runMode)){
 			case "panelRun"_HASH: {
-				// cout<<"directRun"<<endl;
 				system(pscp.c_str());
 				system(plink.c_str());
 				break;
 			}
 			case "terminalRun"_HASH: {
-				// cout<<"terminalRun"<<endl;
 				system(pscp.c_str());
-				// cout<<endl<<"Run Resault:"<<endl;
 				system(plink.c_str());
 				break;
 			}
 			case "openTerminal"_HASH: {
-				// cout<<sshlink<<endl;
 				cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
 				system(sshlink.c_str());
 				break;
@@ -381,8 +367,6 @@ int main(int argc, char const *argv[])
 			case "uploadThisFile"_HASH: {
 				uploadOutMessage(createNowTimeFolder,nowTime);
 				pscp=uploadTo(sshPscp,localfilePath,"file");
-				cout<<pscp<<endl;
-				// cout<<uploadAndRun<<endl;
 				system(pscp.c_str());
 				cout<<"Successfully upload "<<filenameHavePrefix<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
 				break;
@@ -390,23 +374,16 @@ int main(int argc, char const *argv[])
 			case "uploadCurrentFolderAndRun"_HASH: {
 				uploadOutMessage(createNowTimeFolder,nowTime);
 				pscp=uploadTo(sshPscp,localfilePath,"folder");
-				// cout<<pscp<<endl;
-				// cout<<uploadAndRun<<endl;
+				cout<<pscp<<endl;
 				system(pscp.c_str());
 				cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
-				// cout<<endl<<"Run Resault:"<<endl;
 				system(uploadAndRun.c_str());
 				break;
 			}
 			case "uploadCurrentFolderAndTerminalRun"_HASH: {
-				// uploadOutMessage(createNowTimeFolder,nowTime);
 				system(createNowTimeFolder.c_str());
 				pscp=uploadTo(sshPscp,localfilePath,"folder");
-				// cout<<pscp<<endl;
-				// cout<<uploadAndRun<<endl;
 				system(pscp.c_str());
-				// cout<<"Successfully upload "<<localNoFileNamePath<<" to "<<unionArgs["host"]<<":"+unionArgs["uploadTo"]+"/"+nowTime<<endl;
-				cout<<endl<<"Run Resault:"<<endl;
 				system(uploadAndRun.c_str());
 				break;
 			}
@@ -421,12 +398,9 @@ int main(int argc, char const *argv[])
 			}
 		}
 	}else{
-		// cout<<"direct"<<endl;
 		string currentFileOnSambaPath=sambdaMapToLocalParse(localfilePath);
 		string currentSambaPath=string(currentFileOnSambaPath.begin(),currentFileOnSambaPath.begin()+currentFileOnSambaPath.find_last_of("/")+1);
-		// cout<<currentSambaPath<<endl;
 		string panelRunPlink=mergeStr({"\""+sshPlink,"\"cd "+currentSambaPath,"&&"+commandArgs+"&&"+start,"\"\""});
-		// cout<<panelRunPlink<<endl;
 		switch(hashNum(runMode)){
 			case "panelRun"_HASH: {
 				system(panelRunPlink.c_str());
@@ -437,7 +411,6 @@ int main(int argc, char const *argv[])
 				break;
 			}
 			case "openTerminal"_HASH: {
-				// cout<<sshlink<<endl;
 				cout<<"Connecting to "<<unionArgs["host"]<<"..."<<endl;
 				system(sshlink.c_str());
 				break;

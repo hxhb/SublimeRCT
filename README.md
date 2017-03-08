@@ -55,12 +55,12 @@ remoteSambaPath=~/
 
 在[这里](https://github.com/hxhb/sublimeRemoteCompile/releases)下载二进制压缩包，解压到本地的一个目录中。
 
-然后在SublimeText中添加一个`build system`，然后将下面的代码填入其中：
+然后在SublimeText中添加一个`build system`，然后将[RemoteComplie.sublime-build](https://github.com/hxhb/sublimeRemoteCompile/blob/master/RemoteComplie.sublime-build)中的代码填入其中：
 
 ```json
 {
     // binary absolute path
-    "path": "C:\\Program Files (x86)\\SystemTools\\Tookit\\RemoteCompile",
+    "path": "C:\\Users\\visionsmile\\Dropbox\\code\\C++\\CppFile\\RemoteCompile\\binary",
     "cmd": ["cmd", "/c","remotecompile","${file}","panelRun"],
     "file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
      "selector": "source.c,source.cc,source.cpp,source.c++",
@@ -69,27 +69,27 @@ remoteSambaPath=~/
      [
           {
                 "name": "TerminalRun",
-                 "cmd": ["start", "cmd", "/k","remotecompile_clangxx","${file}","terminalRun"]
+                 "cmd": ["start","console_runner.exe","remotecompile","${file}","terminalRun"]
           },
           {
                 "name": "UploadThisFile",
-                 "cmd": ["cmd", "/c","remotecompile_clangxx","${file}","uploadThisFile"]
+                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadThisFile"]
           },
           {
                 "name": "UploadCurrentFolderAndRun",
-                 "cmd": ["cmd", "/c","remotecompile_clangxx","${file}","uploadCurrentFolderAndRun"]
+                 "cmd": ["cmd", "/c","remotecompile","${file}","uploadCurrentFolderAndRun"]
           },
           {
                 "name": "UploadCurrentFolderAndTerminalRun",
-                 "cmd": ["start", "cmd", "/k","remotecompile_clangxx","${file}","uploadCurrentFolderAndTerminalRun"]
+                 "cmd": ["start","console_runner.exe","remotecompile","${file}","uploadCurrentFolderAndTerminalRun"]
           },
           {
                 "name": "CleanUpTemp",
-                "cmd": ["cmd", "/k","remotecompile_clangxx","${file}","cleanUpTemp"]
+                "cmd": ["cmd", "/k","remotecompile","${file}","cleanUpTemp"]
           },
           {
                 "name": "OpenTerminal",
-                 "cmd": ["cmd", "/k","remotecompile_clangxx","${file}","openTerminal"]
+                 "cmd": ["cmd", "/k","remotecompile","${file}","openTerminal"]
           }
      ]
 }
